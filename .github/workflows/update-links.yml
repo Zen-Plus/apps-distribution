@@ -9,13 +9,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Parse release tag to get app and version
+      - name: Parse release tag to get repo and version
         id: parse
         run: |
           tag=${{ github.event.release.tag_name }}
-          version=$(echo "$tag" | sed 's/.*_v//')
-          app_key=$(echo "$tag" | sed 's/_v.*//')
-          echo "app_key=$app_key" >> $GITHUB_OUTPUT
+          version=$(echo "$tag" | sed 's/.*-v//')
+          repo_name=$(echo "$tag" | sed 's/-v.*//')
+          echo "repo_name=$repo_name" >> $GITHUB_OUTPUT
           echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: Checkout gh-pages branch
@@ -26,10 +26,10 @@ jobs:
 
       - name: Update download.html and regenerate index.html
         run: |
-          APP_KEY="${{ steps.parse.outputs.app_key }}"
+          REPO_NAME="${{ steps.parse.outputs.repo_name }}"
           VERSION="${{ steps.parse.outputs.version }}"
           RELEASE_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/app-release.apk"
-          APP_DIR="dist/driver_mobile_app_${APP_KEY}"
+          APP_DIR="dist/${REPO_NAME}"
 
           mkdir -p "$APP_DIR"
 
@@ -39,7 +39,8 @@ jobs:
           # Generate index.html listing all apps
           echo "<!DOCTYPE html><html><head><title>App Downloads</title></head><body><h1>Available Apps</h1><ul>" > dist/index.html
 
-          for folder in dist/driver_mobile_app_*; do
+          for folder in dist/*; do
+            [ -d "$folder" ] || continue
             app_name=$(basename "$folder")
             echo "<li><a href='${app_name}/download.html'>${app_name}</a></li>" >> dist/index.html
           done
@@ -50,5 +51,5 @@ jobs:
         run: |
           cd dist
           git add .
-          git commit -m "Update ${{ steps.parse.outputs.app_key }} to v${{ steps.parse.outputs.version }}" || echo "No changes to commit"
+          git commit -m "Update ${{ steps.parse.outputs.repo_name }} to v${{ steps.parse.outputs.version }}" || echo "No changes to commit"
           git push origin gh-pages
