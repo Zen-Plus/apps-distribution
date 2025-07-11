@@ -29,7 +29,7 @@ jobs:
           REPO_NAME="${{ steps.parse.outputs.repo_name }}"
           VERSION="${{ steps.parse.outputs.version }}"
           RELEASE_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/app-release.apk"
-          APP_DIR="dist/${REPO_NAME}"
+          APP_DIR="dist/public/${REPO_NAME}"
 
           mkdir -p "$APP_DIR"
 
@@ -39,10 +39,10 @@ jobs:
           # Generate index.html listing all apps
           echo "<!DOCTYPE html><html><head><title>App Downloads</title></head><body><h1>Available Apps</h1><ul>" > dist/index.html
 
-          for folder in dist/*; do
+          for folder in dist/public/*; do
             [ -d "$folder" ] || continue
             app_name=$(basename "$folder")
-            echo "<li><a href='${app_name}/download.html'>${app_name}</a></li>" >> dist/index.html
+            echo "<li><a href='public/${app_name}/download.html'>${app_name}</a></li>" >> dist/index.html
           done
 
           echo "</ul></body></html>" >> dist/index.html
