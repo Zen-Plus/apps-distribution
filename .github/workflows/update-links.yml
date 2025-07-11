@@ -18,26 +18,33 @@ jobs:
           echo "app_key=$app_key" >> $GITHUB_OUTPUT
           echo "version=$version" >> $GITHUB_OUTPUT
 
-      - name: Checkout gh-pages branch with write access
+      - name: Checkout gh-pages branch
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "actions@github.com"
           git clone --branch gh-pages https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository }} dist
 
-      - name: Update metadata and download.html
+      - name: Update download.html and regenerate index.html
         run: |
-          APP_DIR="dist/public/driver_mobile_app_${{ steps.parse.outputs.app_key }}"
+          APP_KEY="${{ steps.parse.outputs.app_key }}"
+          VERSION="${{ steps.parse.outputs.version }}"
+          RELEASE_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/app-release.apk"
+          APP_DIR="dist/driver_mobile_app_${APP_KEY}"
+
           mkdir -p "$APP_DIR"
 
-          RELEASE_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/app-release.apk"
+          # Create/Update download.html
+          echo "<!DOCTYPE html><html><head><meta http-equiv='refresh' content='0;url=${RELEASE_URL}'></head><body>If not redirected, <a href='${RELEASE_URL}'>click here</a>.</body></html>" > "$APP_DIR/download.html"
 
-          echo "{
-            \"version\": \"${{ steps.parse.outputs.version }}\",
-            \"apk_url\": \"$RELEASE_URL\",
-            \"updated_at\": \"$(date +%F)\"
-          }" > "$APP_DIR/info.json"
+          # Generate index.html listing all apps
+          echo "<!DOCTYPE html><html><head><title>App Downloads</title></head><body><h1>Available Apps</h1><ul>" > dist/index.html
 
-          echo "<!DOCTYPE html><html><head><meta http-equiv=\"refresh\" content=\"0;url=$RELEASE_URL\"></head><body>If not redirected, <a href=\"$RELEASE_URL\">click here</a>.</body></html>" > "$APP_DIR/download.html"
+          for folder in dist/driver_mobile_app_*; do
+            app_name=$(basename "$folder")
+            echo "<li><a href='${app_name}/download.html'>${app_name}</a></li>" >> dist/index.html
+          done
+
+          echo "</ul></body></html>" >> dist/index.html
 
       - name: Commit and push changes
         run: |
