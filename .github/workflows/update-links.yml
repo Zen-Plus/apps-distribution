@@ -33,26 +33,10 @@ jobs:
 
           mkdir -p "$APP_DIR"
 
-          # Create/Update download.html with improved mobile-friendly UI
-          cat <<EOF > "$APP_DIR/download.html"
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="refresh" content="0;url=${RELEASE_URL}">
-  <title>Redirecting...</title>
-  <style>
-    body { font-family: sans-serif; text-align: center; padding: 50px; background: #f9f9f9; }
-    a { color: #007bff; font-weight: bold; text-decoration: none; }
-    a:hover { text-decoration: underline; }
-  </style>
-</head>
-<body>
-  <p>Download not started? <a href="${RELEASE_URL}">Click here</a></p>
-</body>
-</html>
-EOF
+          # Create/Update download.html with mobile-friendly UI in one line
+          DOWNLOAD_HTML='<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta http-equiv="refresh" content="0;url='"$RELEASE_URL"'"><title>Redirecting...</title><style>body { font-family: sans-serif; text-align: center; padding: 50px; background: #f9f9f9; } a { color: #007bff; font-weight: bold; text-decoration: none; } a:hover { text-decoration: underline; }</style></head><body><p>Download not started? <a href="'"$RELEASE_URL"'">Click here</a></p></body></html>'
+
+          echo "$DOWNLOAD_HTML" > "$APP_DIR/download.html"
 
           # Generate index.html with improved UI
           echo "<!DOCTYPE html><html lang=\"en\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><title>App Downloads</title><style>body { font-family: sans-serif; padding: 20px; background: #fff; } h1 { font-size: 1.5em; } ul { list-style: none; padding: 0; } li { margin: 10px 0; } a { text-decoration: none; color: #0366d6; font-weight: bold; } a:hover { text-decoration: underline; }</style></head><body><h1>Available Apps</h1><ul>" > dist/index.html
