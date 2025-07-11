@@ -1,0 +1,45 @@
+name: Update static APK links after release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  update-static-links:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Parse release tag to get app and version
+        id: parse
+        run: |
+          tag=${{ github.event.release.tag_name }}
+          version=$(echo "$tag" | sed 's/.*_v//')
+          app_key=$(echo "$tag" | sed 's/_v.*//')
+          echo "app_key=$app_key" >> $GITHUB_OUTPUT
+          echo "version=$version" >> $GITHUB_OUTPUT
+
+      - name: Checkout gh-pages branch
+        uses: actions/checkout@v3
+        with:
+          ref: gh-pages
+          path: dist
+
+      - name: Update metadata and download.html
+        run: |
+          APP_DIR="dist/public/driver_mobile_app_${{ steps.parse.outputs.app_key }}"
+          mkdir -p "$APP_DIR"
+
+          RELEASE_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/app-release.apk"
+
+          echo "{\n  \"version\": \"${{ steps.parse.outputs.version }}\",\n  \"apk_url\": \"$RELEASE_URL\",\n  \"updated_at\": \"$(date +%F)\"\n}" > "$APP_DIR/info.json"
+
+          echo "<!DOCTYPE html><html><head><meta http-equiv=\"refresh\" content=\"0;url=$RELEASE_URL\"></head><body>If not redirected, <a href=\"$RELEASE_URL\">click here</a>.</body></html>" > "$APP_DIR/download.html"
+
+      - name: Commit and push changes
+        run: |
+          cd dist
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add .
+          git commit -m "Update ${{ steps.parse.outputs.app_key }} to v${{ steps.parse.outputs.version }}"
+          git push origin gh-pages
