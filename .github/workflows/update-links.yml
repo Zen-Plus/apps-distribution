@@ -18,11 +18,11 @@ jobs:
           echo "app_key=$app_key" >> $GITHUB_OUTPUT
           echo "version=$version" >> $GITHUB_OUTPUT
 
-      - name: Checkout gh-pages branch
-        uses: actions/checkout@v3
-        with:
-          ref: gh-pages
-          path: dist
+      - name: Checkout gh-pages branch with write access
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+          git clone --branch gh-pages https://x-access-token:${{ secrets.GH_PAT }}@github.com/${{ github.repository }} dist
 
       - name: Update metadata and download.html
         run: |
@@ -31,15 +31,17 @@ jobs:
 
           RELEASE_URL="https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/app-release.apk"
 
-          echo "{\n  \"version\": \"${{ steps.parse.outputs.version }}\",\n  \"apk_url\": \"$RELEASE_URL\",\n  \"updated_at\": \"$(date +%F)\"\n}" > "$APP_DIR/info.json"
+          echo "{
+            \"version\": \"${{ steps.parse.outputs.version }}\",
+            \"apk_url\": \"$RELEASE_URL\",
+            \"updated_at\": \"$(date +%F)\"
+          }" > "$APP_DIR/info.json"
 
           echo "<!DOCTYPE html><html><head><meta http-equiv=\"refresh\" content=\"0;url=$RELEASE_URL\"></head><body>If not redirected, <a href=\"$RELEASE_URL\">click here</a>.</body></html>" > "$APP_DIR/download.html"
 
       - name: Commit and push changes
         run: |
           cd dist
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
           git add .
-          git commit -m "Update ${{ steps.parse.outputs.app_key }} to v${{ steps.parse.outputs.version }}"
+          git commit -m "Update ${{ steps.parse.outputs.app_key }} to v${{ steps.parse.outputs.version }}" || echo "No changes to commit"
           git push origin gh-pages
